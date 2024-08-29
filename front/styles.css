@@ -71,7 +71,9 @@ header img {
     justify-content: center;
     align-items: center;
     gap: 1rem;
+    height: calc(100vh - 6rem);
 }
+
 #menuToggle {
     background: none;
     padding: 0.25rem;
@@ -189,4 +191,18 @@ header img {
     border-left: none;
     background-color: rgb(152, 14, 233);
     background-image: radial-gradient(circle at 100% 0%, transparent 20%, #ffffff31, transparent, #00000083)
+}
+
+
+@media screen and (min-width: 800px) {
+    #wheel {
+        width: 400px;
+        height: 400px;
+        grid-template-columns: 200px 200px;
+        grid-template-rows: 200px 200px;
+    }
+    .color {
+        width: 200px;
+        height: 200px;
+    }
 }
