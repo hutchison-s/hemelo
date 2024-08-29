@@ -190,7 +190,7 @@ class Game {
         setTimeout(()=>{this.ui.displayText = 'Ready?'}, this.truePattern.totalTime + 1000)
     }
     async postScore(initials) {
-        const updated = await fetch('http://localhost:8000/scores', {
+        const updated = await fetch('https:hemelo.vercel.app/scores', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -303,7 +303,7 @@ const game = new Game(scoreList, levelCounter, wheel, colors, display, startBtn)
 
 
 async function fetchScores() {
-    const scores = await fetch('http://localhost:8000/scores');
+    const scores = await fetch('https:hemelo.vercel.app/scores');
     const json = await scores.json();
     return json.scores
 }
