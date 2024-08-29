@@ -60,7 +60,7 @@ app.post('/scores', async (req, res) => {
         const topScores = await getTop(6)
 
         // Add new score if it's among the top 3
-        if (topScores.length < 3 || topScores.some(s => s.score < score)) {
+        if (topScores.length < 6 || topScores.some(s => s.score < score)) {
             await Score.create({ initials, score });
             const updated = await getTop(6)
             console.log('Scores updated');
