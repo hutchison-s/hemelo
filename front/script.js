@@ -14,17 +14,17 @@ class Pattern {
         this.max = length;
         this.touches = [];
     }
-    static generateRandom(length) {
+    static generateRandom(length, isEasy=false) {
         const pat = new Pattern(length)
         for (let i = 0; i < length; i++) {
             const randomIndex = Math.floor(Math.random() * 4);
             pat.insert(randomIndex);
             if (i !== 0) {
                 const multiple = Math.ceil(Math.random() * 2);
-                pat.touches[i].elapsedTime = multiple * 350;
+                pat.touches[i].elapsedTime = isEasy ? 600 : multiple * 350;
             }
         }
-        console.log(pat)
+        console.log(pat.touches.map(t => t.value))
         return pat;
     }
     get totalTime() {
@@ -46,18 +46,19 @@ class Pattern {
             this.touches.push(newTouch);
         }
     }
-    equals(other, maxIndex=this.touches.length) {
+    equals(other, isEasy) {
         if (!(other instanceof Pattern)) {
             console.error('not a pattern');
             return false;
         }
+        const maxIndex = this.touches.length
         for (let i = 0; i < maxIndex; i++) {
             const x = this.touches[i];
             const y = other.touches[i];
             const delta = Math.abs(x.elapsedTime - y.elapsedTime);
-            if (x.value !== y.value || delta > 300) {
-                console.log(x.value, y.value, delta);
-                
+            if (x.value !== y.value) {
+                return false;
+            } else if (!isEasy && delta > 300) {
                 return false;
             }
         }
@@ -76,21 +77,23 @@ class Pattern {
 }
 
 class Game {
-    constructor(scoreList, levelCounter, wheel, colors, display, button) {
+    constructor(modeBtns, scoreList, levelCounter, wheel, colors, display, button) {
         this.speed = 350;
         this.level = 3;
         this.isPaused = true;
         this.truePattern = Pattern.generateRandom(this.level);
         this.userPattern = new Pattern(this.level);
-        this.ui = new GameUI(scoreList, levelCounter, wheel, colors, display, button);
+        this.ui = new GameUI(modeBtns, scoreList, levelCounter, wheel, colors, display, button);
         this.audio = new GameAudio();
         this.scores = null;
+        this.mode = 'normal';
         this.initialize();
-        
     }
+
     async initialize() {
-        this.scores = await fetchScores();
+        this.scores = await this.fetchScores();
         this.ui.highScores = this.scores;
+
         for (const [idx, c] of this.ui.colors.entries()) {
             c.addEventListener('pointerdown', ()=>{
                 c.classList.add('active')
@@ -100,36 +103,50 @@ class Game {
             })
             c.addEventListener('click', (e)=>this.evaluateTouch(e, idx))
         }
-        this.ui.button.addEventListener('click', ()=>{
-            console.log('clicked');
-            
+        for (const b of this.ui.modeBtns) {
+            b.addEventListener('change', (e)=>{
+                if (e.target.checked) {
+                    this.mode = e.target.value;
+                    if (this.mode === 'easy') {
+                        alert('High scores will not be saved in easy mode.')
+                    }
+                    this.reset();
+                    console.log(this.mode);
+                    
+                }
+            })
+        }
+
+        this.ui.button.addEventListener('click', ()=>{            
             this.newPattern()
         });
-        
+
     }
     newPattern() {
         if (this.audio.actx === null) {
-            console.log('creating context');
-            
             this.audio.createContext();
         }
-        console.log('disabling button');
-        
         this.ui.disableButton()
         this.ui.displayText = 'Pay attention...'
-        this.truePattern = Pattern.generateRandom(this.level);
+        this.truePattern = Pattern.generateRandom(this.level, this.mode === 'easy');
+        if (this.mode === 'hard') {
+            this.ui.hideWheel();
+        }
         this.truePattern.play(this.playTouch.bind(this))
         setTimeout(()=>{
             this.ui.displayText = 'Go ahead...'
             this.isPaused = false;
-        }, this.truePattern.totalTime)
+            if (this.mode === 'hard') {
+                this.ui.showWheel();
+            }
+        }, this.truePattern.totalTime + 1000)
     }
     playTouch(idx) {
         this.ui.highlightColor(idx)
         this.audio.produceTone(idx)
     }
     isCorrectPattern() {
-        return this.truePattern.equals(this.userPattern)
+        return this.truePattern.equals(this.userPattern, this.mode === 'easy')
     }
     evaluateTouch(e, idx) {
         if (this.isPaused) return;
@@ -146,19 +163,22 @@ class Game {
             this.handleWrongPattern();
         }
     }
-    handleWrongPattern() {
+    async handleWrongPattern() {
         this.ui.displayText = 'Not Quite!'
         this.ui.disableWheel();
         this.isPaused = true;
-        setTimeout(this.reset.bind(this), 1000)
+        await this.updateScores();
+        setTimeout(()=>{
+            this.reset();
+            this.truePattern.play(this.playTouch.bind(this))
+            this.ui.highScores = this.scores;
+        }, 1000)
     }
-    
     handleCorrectPattern() {
         this.isPaused = true;
         this.ui.displayText = 'Correct!'
         setTimeout(this.advance.bind(this), 1000)
     }
-    
     advance() {
         this.level++;
         this.userPattern.clear();
@@ -166,28 +186,41 @@ class Game {
         this.ui.refresh(this.level);
         this.ui.displayText = 'On to the next!'
     }
-    
-    async reset() {
-        
-        
-        if (this.scores.length < 6 || this.scores.some(score => score.score < this.level - 2)) {
-            const initials = prompt('Enter your initials (3 letters max)');
-            const cleaned = initials ? initials.slice(0, 3).toUpperCase().trim() : 'Anon'
-            this.scores.length = 0;
-            const newScores = await this.postScore(cleaned);
-            for (const score of newScores) {
-                this.scores.push(score);
-            }
-        } else {
-            this.scores = await fetchScores();
-        }
-        this.truePattern.play(this.playTouch.bind(this))
-        this.ui.highScores = this.scores;
+    reset() {
         this.level = 3;
         this.userPattern.clear();
         this.userPattern.max = this.level;
-        setTimeout(()=>this.ui.refresh(this.level), this.truePattern.totalTime + 1000)
-        setTimeout(()=>{this.ui.displayText = 'Ready?'}, this.truePattern.totalTime + 1000)
+        setTimeout(()=>{
+            this.ui.refresh(this.level);
+            this.ui.displayText = 'Ready?';
+        }, this.truePattern.totalTime + 1000)
+    }
+    getInitials() {
+        const initials = prompt('Enter your initials (3 letters max)');
+        const cleaned = initials ? initials.slice(0, 3).toUpperCase().trim() : 'Anon';
+        return cleaned;
+    }
+    async fetchScores() {
+        const scores = await fetch('https://hemelo.vercel.app/scores');
+        const json = await scores.json();
+        return json.scores
+    }
+    async updateScores() {
+        if (this.mode === 'easy') return;
+
+        let newScores;
+        const hasFewerScores = this.scores.length < 10;
+        const isHigherScore = this.scores.some(score => score.score < this.level - 2)
+
+        if (hasFewerScores || isHigherScore) {
+            const initials = this.getInitials()
+            newScores = await this.postScore(initials);
+        } else {
+            newScores = await this.fetchScores();
+        }
+        for (let i = 0; i < newScores.length; i++) {
+            this.scores[i] = newScores[i];
+        }
     }
     async postScore(initials) {
         const updated = await fetch('https://hemelo.vercel.app/scores', {
@@ -203,19 +236,26 @@ class Game {
 }
 
 class GameUI {
-    constructor(scoreList, levelCounter, wheel, colors, display, button) {
+    constructor(modeBtns, scoreList, levelCounter, wheel, colors, display, button) {
         this.scoreList = scoreList;
         this.levelCounter = levelCounter;
         this.wheel = wheel;
         this.colors = colors;
         this.display = display;
         this.button = button;
+        this.modeBtns = modeBtns;
     }
     disableButton() {
         this.button.setAttribute('disabled', true)
     }
     enableButton() {
         this.button.removeAttribute('disabled')
+    }
+    hideWheel() {
+        this.wheel.classList.add('hidden')
+    }
+    showWheel() {
+        this.wheel.classList.remove('hidden')
     }
     disableWheel() {
         this.wheel.classList.add('failed')
@@ -275,7 +315,6 @@ class GameAudio {
     }
 }
 
-
 const colors = [
     $id('Red'),
     $id('Green'),
@@ -290,6 +329,7 @@ const scoresBtn = $id('menuToggle');
 const scores = $id('highScores');
 const scoreList = $id('scoreList');
 const closeScoresBtn = $id('closeModal');
+const modeBtns = $arr('input[name="mode"]');
 
 scoresBtn.addEventListener('click', ()=>{
     scores.showModal();
@@ -299,11 +339,6 @@ closeScoresBtn.addEventListener('click', ()=>{
     scores.close();
 })
 
-const game = new Game(scoreList, levelCounter, wheel, colors, display, startBtn);
+const game = new Game(modeBtns, scoreList, levelCounter, wheel, colors, display, startBtn);
 
 
-async function fetchScores() {
-    const scores = await fetch('https://hemelo.vercel.app/scores');
-    const json = await scores.json();
-    return json.scores
-}

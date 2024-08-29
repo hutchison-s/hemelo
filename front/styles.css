@@ -11,25 +11,55 @@ body {
     width: 100%;
     height: 100vh;
     background: #171717;
-    display: flex;
     justify-content: center;
     align-items: center;
+    padding: 0.2rem;
+}
+body:has(input[name="mode"][value='hard']:checked) {
+    background-image: radial-gradient(#171717 50%, #420505);
+}
+body:has(input[name="mode"][value='easy']:checked) {
+    background-image: radial-gradient(#171717 50%, #032b31);
 }
 header {
-    position: fixed;
+    position: relative;
     left: 0;
     width: 100%;
     text-align: center;
     top: 0;
-    padding: 1rem;
+    padding: 0.2rem 1rem;
     font-size: 1.4rem;
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
 }
 header img {
     aspect-ratio: 1;
     width: 2rem;
+}
+#subHeader {
+    flex: 100%;
+    padding: 0.5rem 0;
+    display: flex;
+    justify-content: space-between;
+}
+.modeLabel {
+    color: #ffffff88;
+    padding: 0.25rem 0.5rem;
+    font-size: 1rem;
+    border-radius: 0.2rem;
+    cursor: pointer;
+}
+.modeLabel:has(:checked) {
+    color: white;
+    border: 1px solid #ffffff88;
+}
+#easyLabel:has(:checked) {
+    background-color: #0c6589;
+}
+#hardLabel:has(:checked) {
+    background-color: rgb(188, 95, 19);
 }
 #root {
     text-align: center;
@@ -38,7 +68,6 @@ header img {
     justify-content: center;
     align-items: center;
     gap: 1rem;
-    margin-top: 1rem;
 }
 #menuToggle {
     background: none;
@@ -94,6 +123,9 @@ header img {
 }
 #wheel.failed {
     filter: saturate(0.5)
+}
+#wheel.hidden {
+    opacity: 0;
 }
 
 #instructions {
