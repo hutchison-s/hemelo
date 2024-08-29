@@ -228,7 +228,7 @@ class Game {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({initials, score: this.level - 2})
+            body: JSON.stringify({initials, score: this.level - 2, mode: this.mode})
         })
         const json = await updated.json();
         return json.scores;
@@ -287,7 +287,7 @@ class GameUI {
         }
         this.scoreList.innerHTML = ''
         for (const [idx, score] of array.entries()) {
-            this.scoreList.innerHTML += `<li>${idx+1}. ${score.initials} - Level ${score.score}</li>`
+            this.scoreList.innerHTML += `<li>${idx+1}. ${score.initials} - Level ${score.score}${score.hardMode ? ' *' : ''}</li>`
         }
     }
 }
