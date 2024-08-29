@@ -31,7 +31,7 @@ const Score = mongoose.model('Score', entry, 'scores');
 // GET endpoint to retrieve top scores
 app.get('/scores', async (req, res) => {
     try {
-        const topScores = await getTop(6)
+        const topScores = await getTop(10);
         if (!topScores || topScores.length === 0) {
             console.log('No scores yet');
             
@@ -57,12 +57,12 @@ app.post('/scores', async (req, res) => {
     }
 
     try {
-        const topScores = await getTop(6)
+        const topScores = await getTop(10);
 
         // Add new score if it's among the top 3
-        if (topScores.length < 6 || topScores.some(s => s.score < score)) {
+        if (topScores.length < 10 || topScores.some(s => s.score < score)) {
             await Score.create({ initials, score });
-            const updated = await getTop(6)
+            const updated = await getTop(10);
             console.log('Scores updated');
             
             return res.send({ scores: updated });
