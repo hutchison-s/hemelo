@@ -303,7 +303,7 @@ const game = new Game(scoreList, levelCounter, wheel, colors, display, startBtn)
 
 
 async function fetchScores() {
-    const scores = await fetch('htts://hemelo.vercel.app/scores');
+    const scores = await fetch('https://hemelo.vercel.app/scores');
     const json = await scores.json();
     return json.scores
 }
