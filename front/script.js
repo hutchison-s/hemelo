@@ -139,7 +139,7 @@ class Game {
             if (this.mode === 'hard') {
                 this.ui.showWheel();
             }
-        }, this.truePattern.totalTime + 1000)
+        }, this.truePattern.totalTime + 500)
     }
     playTouch(idx) {
         this.ui.highlightColor(idx)
