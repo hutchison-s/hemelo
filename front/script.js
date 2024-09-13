@@ -24,7 +24,6 @@ class Pattern {
                 pat.touches[i].elapsedTime = isEasy ? 600 : multiple * 350;
             }
         }
-        console.log(pat.touches.map(t => t.value))
         return pat;
     }
     get totalTime() {
@@ -110,9 +109,7 @@ class Game {
                     if (this.mode === 'easy') {
                         alert('High scores will not be saved in easy mode.')
                     }
-                    this.reset();
-                    console.log(this.mode);
-                    
+                    this.reset();                    
                 }
             })
         }
