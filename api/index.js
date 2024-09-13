@@ -82,7 +82,7 @@ app.post('/scores', async (req, res) => {
 });
 
 async function getTop(n) {
-    return await Score.find({name: {$ne: 'Anon'}}).sort({score: -1, timestamp: 1}).limit(n);
+    return await Score.find({name: {$ne: 'Anon'}}).sort({score: -1, hardMode: -1, timestamp: 1}).limit(n);
 }
 
 // Start the server
