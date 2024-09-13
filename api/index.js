@@ -22,9 +22,11 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Define Mongoose schema and model
 const entry = new Schema({
+    name: {type: String, required: true},
     initials: { type: String, required: true },
     score: { type: Number, required: true },
-    hardMode: Boolean
+    hardMode: Boolean,
+    timestamp: {type: Number, required: true}
 });
 
 const Score = mongoose.model('Score', entry, 'scores');
@@ -48,21 +50,22 @@ app.get('/scores', async (req, res) => {
 
 // POST endpoint to add a new score
 app.post('/scores', async (req, res) => {
-    const { initials, score, mode } = req.body;
+    const { name, initials, score, mode } = req.body;
 
     // Validate request data
-    if (!initials || !mode || score == null || isNaN(score)) {
+    if (!name || !initials || !mode || score == null || isNaN(score)) {
         console.log('Incorrect body');
         
-        return res.status(400).send({ message: 'Invalid input. Initials, mode, and a valid score are required.' });
+        return res.status(400).send({ message: 'Invalid input. Name, initials, mode, and a valid score are required.' });
     }
 
     try {
+        const now = Date.now()
         const topScores = await getTop(10);
 
         // Add new score if it's among the top 3
         if (topScores.length < 10 || topScores.some(s => s.score < score)) {
-            await Score.create({ initials, score, hardMode: mode === 'hard' });
+            await Score.create({ name, initials, score, hardMode: mode === 'hard', timestamp: now });
             const updated = await getTop(10);
             console.log('Scores updated');
             
@@ -79,7 +82,7 @@ app.post('/scores', async (req, res) => {
 });
 
 async function getTop(n) {
-    return await Score.find().sort({score: -1}).limit(n);
+    return await Score.find({name: {$ne: 'Anon'}}).sort({score: -1, timestamp: 1}).limit(n);
 }
 
 // Start the server
