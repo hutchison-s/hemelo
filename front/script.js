@@ -196,9 +196,13 @@ class Game {
         }, this.truePattern.totalTime + 1000)
     }
     getInitials() {
-        const initials = prompt('Enter your initials (3 letters max)');
-        const cleaned = initials ? initials.slice(0, 3).toUpperCase().trim() : 'Anon';
-        return cleaned;
+        const userInput = prompt('Enter your full name (eg. "Patrick Lavon Mahomes")');
+        if (!userInput) {
+            return {name: 'Anon', initials: 'Anon'}
+        }
+        const names = userInput.trim().split(" ").slice(0, 3);
+        const initials = names.map(name => name[0].toUpperCase()).join("")
+        return {name: userInput.trim().substring(0, 35), initials};
     }
     async fetchScores() {
         const scores = await fetch('https://hemelo.vercel.app/scores');
@@ -213,8 +217,8 @@ class Game {
         const isHigherScore = this.scores.some(score => score.score < this.level - 2)
 
         if (hasFewerScores || isHigherScore) {
-            const initials = this.getInitials()
-            newScores = await this.postScore(initials);
+            const {name, initials} = this.getInitials()
+            newScores = await this.postScore(name, initials);
         } else {
             newScores = await this.fetchScores();
         }
@@ -222,13 +226,13 @@ class Game {
             this.scores[i] = newScores[i];
         }
     }
-    async postScore(initials) {
+    async postScore(name, initials) {
         const updated = await fetch('https://hemelo.vercel.app/scores', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({initials, score: this.level - 2, mode: this.mode})
+            body: JSON.stringify({name, initials, score: this.level - 2, mode: this.mode})
         })
         const json = await updated.json();
         return json.scores;
